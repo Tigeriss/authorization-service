@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+func heading(f http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("X-Powered-By", "Tigeriss' Engine")
+		f(writer, request)
+	}
+}
+
 func lowercaseHandle(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		w.WriteHeader(http.StatusForbidden)
@@ -57,8 +64,8 @@ func uppercaseHandler(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 
-	http.HandleFunc("/api/lowercase", lowercaseHandle)
-	http.HandleFunc("/api/uppercase", uppercaseHandler)
+	http.HandleFunc("/api/lowercase", heading(lowercaseHandle))
+	http.HandleFunc("/api/uppercase", heading(uppercaseHandler))
 
 	log.Fatal(http.ListenAndServe(":9090", nil))
 }
