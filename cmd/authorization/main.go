@@ -7,24 +7,9 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 )
 
 var dbConnStr = "postgres://authent_service:608011@localhost/auth_service?sslmode=disable"
-
-type User struct {
-	ID           int64  `json:"id"`
-	Login        string `json:"login"`
-	PasswordHash string `json:"password_hash"`
-}
-
-type Token struct {
-	Token   string    `json:"token"`
-	UserID  int64     `json:"user_id"`
-	Scope   string    `json:"scope"`
-	Created time.Time `json:"created"`
-	Expired time.Time `json:"expired"`
-}
 
 func heading(f http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
@@ -91,104 +76,6 @@ func uppercaseHandler(w http.ResponseWriter, req *http.Request) {
 
 	w.Write([]byte(result))
 	return
-}
-
-func createUser(db *sql.DB, login, password_hash string) error {
-	createUserStmt := `INSERT INTO users VALUES($1, $2)`
-	_, err := db.Exec(createUserStmt, login, password_hash)
-
-	if err != nil {
-		log.Println("Error create user " + err.Error())
-		return err
-	}
-	return err
-}
-func readUser(db *sql.DB, login string) (User, error) {
-	var user User
-	readUserStmt := `SELECT * FROM users WHERE login = $1`
-
-	rows, err := db.Query(readUserStmt, login)
-	if err != nil {
-		log.Println("Error get user " + err.Error())
-		return user, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		err = rows.Scan(&user)
-		if err != nil {
-			log.Println("Error get data from row " + err.Error())
-			return user, err
-		}
-	}
-	return user, nil
-}
-
-func updateUser(db *sql.DB, login, password_hash string) error {
-	updateUserStmt := `UPDATE users SET password_hash = $1 WHERE login = $2`
-	_, err := db.Exec(updateUserStmt, password_hash, login)
-
-	if err != nil {
-		log.Println("Error update user " + err.Error())
-		return err
-	}
-	return err
-}
-
-func deleteUser(db *sql.DB, login string) error {
-	deleteUserStmt := `DELETE FROM users WHERE login = $1`
-
-	_, err := db.Exec(deleteUserStmt, login)
-
-	if err != nil {
-		log.Println("Error delete user " + err.Error())
-		return err
-	}
-
-	return err
-}
-
-func createToken(db *sql.DB, token string, userID int64, expired time.Time) error {
-	createTokenStmt := `INSERT INTO tokens (token, user_id) VALUES($1, $2)`
-	_, err := db.Exec(createTokenStmt, token, userID)
-
-	if err != nil {
-		log.Println("Error create token " + err.Error())
-		return err
-	}
-	return err
-}
-func readToken(db *sql.DB, tok string) (Token, error) {
-	var token Token
-	readTokenStmt := `SELECT * FROM tokens WHERE token = $1`
-
-	rows, err := db.Query(readTokenStmt, tok)
-	if err != nil {
-		log.Println("Error get token " + err.Error())
-		return token, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		err = rows.Scan(&tok)
-		if err != nil {
-			log.Println("Error get data from row " + err.Error())
-			return token, err
-		}
-	}
-	return token, nil
-}
-func deleteToken(db *sql.DB, token string) error {
-	deleteTokenStmt := `DELETE FROM tokens WHERE token = $1`
-
-	_, err := db.Exec(deleteTokenStmt, token)
-
-	if err != nil {
-		log.Println("Error delete token " + err.Error())
-		return err
-	}
-
-	return err
 }
 
 func main() {
