@@ -1,11 +1,15 @@
 package main
 
 import (
+	"database/sql"
+	_ "github.com/lib/pq"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 )
+
+var dbConnStr = "postgres://authent_service:608011@localhost/auth_service?sslmode=disable"
 
 func heading(f http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
@@ -76,7 +80,19 @@ func uppercaseHandler(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 
-	http.HandleFunc("/api/lowercase", private(heading(lowercaseHandle)))
+	db, err := sql.Open("postgres", dbConnStr)
+	if err != nil {
+		log.Println("Error open db connection: " + err.Error())
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		log.Println("Error ping db connection: " + err.Error())
+	}
+	log.Println("Connect to db successfully")
+
+	http.HandleFunc("/api/private/lowercase", private(heading(lowercaseHandle)))
 	http.HandleFunc("/api/uppercase", heading(uppercaseHandler))
 
 	log.Fatal(http.ListenAndServe(":9090", nil))
