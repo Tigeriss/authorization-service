@@ -1,6 +1,8 @@
 package main
 
 import (
+	"authorization-service/cmd/authorization/stmt"
+	"context"
 	"database/sql"
 	_ "github.com/lib/pq"
 	"io/ioutil"
@@ -91,6 +93,8 @@ func main() {
 		log.Println("Error ping db connection: " + err.Error())
 	}
 	log.Println("Connect to db successfully")
+	ctx := new(context.Context)
+	stmt.PrepareStatements(*ctx, db)
 
 	http.HandleFunc("/api/private/lowercase", private(heading(lowercaseHandle)))
 	http.HandleFunc("/api/uppercase", heading(uppercaseHandler))

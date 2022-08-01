@@ -1,34 +1,25 @@
 package db
 
 import (
+	"authorization-service/cmd/authorization/stmt"
 	"authorization-service/internal/entity"
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 )
 
-func CreateToken(ctx context.Context, db *sql.DB, token string, userID int64, expired time.Time) error {
+func CreateToken(ctx context.Context, token string, userID int64, expired time.Time) error {
 
 	var idExists bool
-	isUserIDExistsStmt, err := db.Prepare(`SELECT EXISTS(SELECT id FROM users WHERE id = $1)`)
-	if err != nil {
-		return err
-	}
-	row := isUserIDExistsStmt.QueryRowContext(ctx, userID)
+	row := stmt.Token.Read.QueryRowContext(ctx, userID)
 
-	err = row.Scan(&idExists)
+	err := row.Scan(&idExists)
 	if err != nil {
 		return err
 	}
 
 	if idExists {
-		createTokenStmt, err := db.Prepare(`INSERT INTO tokens (token, user_id, expired) VALUES($1, $2, $3)`)
-		if err != nil {
-			return err
-		}
-
-		_, err = createTokenStmt.ExecContext(ctx, token, userID, expired)
+		_, err = stmt.Token.Create.ExecContext(ctx, token, userID, expired)
 		if err != nil {
 			return err
 		}
@@ -40,17 +31,12 @@ func CreateToken(ctx context.Context, db *sql.DB, token string, userID int64, ex
 	return nil
 }
 
-func ReadToken(ctx context.Context, db *sql.DB, tok string) (entity.Token, error) {
+func ReadToken(ctx context.Context, tok string) (entity.Token, error) {
 	var token entity.Token
 
-	readTokenStmt, err := db.Prepare(`SELECT * FROM tokens WHERE token = $1`)
-	if err != nil {
-		return token, err
-	}
+	row := stmt.Token.Read.QueryRowContext(ctx, tok)
 
-	row := readTokenStmt.QueryRowContext(ctx, tok)
-
-	err = row.Scan(&tok)
+	err := row.Scan(&token)
 	if err != nil {
 		return token, fmt.Errorf("unable to read token: %w", err)
 	}
@@ -58,13 +44,9 @@ func ReadToken(ctx context.Context, db *sql.DB, tok string) (entity.Token, error
 	return token, nil
 }
 
-func DeleteToken(ctx context.Context, db *sql.DB, token string) error {
-	deleteTokenStmt, err := db.Prepare(`DELETE FROM tokens WHERE token = $1`)
-	if err != nil {
-		return err
-	}
+func DeleteToken(ctx context.Context, token string) error {
 
-	_, err = deleteTokenStmt.ExecContext(ctx, token)
+	_, err := stmt.Token.Delete.ExecContext(ctx, token)
 	if err != nil {
 		return err
 	}
